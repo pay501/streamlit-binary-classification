@@ -34,7 +34,9 @@ def main():
         for col in data.columns:
             data[col] = label.fit_transform(data[col])
         return data
-    
+
+
+
     @st.cache_data(persist=True)
     def spliting_data(df):
         y = df.type
@@ -49,8 +51,6 @@ def main():
             fig, ax = plt.subplots()
             ConfusionMatrixDisplay.from_estimator(model, x_test, y_test, ax=ax, display_labels=class_names)
             st.pyplot(fig)
-    
-            
         
         if 'ROC Curve' in metrics_list:
             
@@ -64,7 +64,10 @@ def main():
             fig, ax = plt.subplots()
             PrecisionRecallDisplay.from_estimator(model, x_test, y_test, ax=ax)
             st.pyplot(fig)
-      
+    
+
+
+    # Start main section here.
     df = load_data()
     x_train, x_test, y_train, y_test = spliting_data(df)
     class_names = ['edible','poisonous']
@@ -84,7 +87,7 @@ def main():
 
         if st.sidebar.button("Classify", key='classify'):
             st.subheader("Supper Vector Machine (SVM) results")
-            model = SVC(C=C, kernel=kernel, gamma=gamma)
+            model = SVC(random_state=None, C=C, kernel=kernel, gamma=gamma)
             model.fit(x_train,y_train)
             accuracy = model.score(x_test, y_test)
             y_pred   = model.predict(x_test)
@@ -102,32 +105,86 @@ def main():
 
      ############### Step 4 Training a Logistic Regression Classifier ##########
      # Start you Code here #
+    if classifier == "Logistice Regression":
+        st.sidebar.subheader("Model Hyperparameters")
+        solver = st.sidebar.selectbox("Solver", ("lbfgs", "liblinear", "newton-cg", "newton-cholesky", "sag", "saga"), key='solver')
+        C = st.sidebar.number_input("C", 0.01 , 2.0, step=0.01, key='C')
+        metrics = st.sidebar.multiselect("What metrics to plot?", ("Confusion Matrix", "ROC Curve", "Precision-Recall Curve"))
 
-
-
-
-
+        if st.sidebar.button("Classify", key='classify'):
+            st.subheader("Logistice Regression results")
+            # model = SVC(C=C, kernel=kernel, gamma=gamma)
+            model = LogisticRegression(random_state=None ,solver=solver, max_iter=500, C=C)
+            model.fit(x_train, y_train)
+            # model.fit(x_train,y_train)
+            accuracy = model.score(x_test, y_test)
+            # accuracy = model.score(x_test, y_test)
+            y_predict = model.predict(x_test)
+            # y_pred   = model.predict(x_test)
+            
+            precision = precision_score(y_test, y_predict).round(2)
+            # precision = precision_score(y_test, y_pred).round(2)
+            recall = recall_score(y_test, y_predict).round(2)
+            # recall = recall_score(y_test, y_pred).round(2)
+            
+            st.write("Accuracy: ", round(accuracy, 2))
+            # st.write("Accuracy: ", round(accuracy, 2))
+            st.write("Precision: ", precision)
+            # st.write("Precision: ", precision)
+            st.write("Recall: ", recall)
+            # st.write("Recall: ", recall)
+            plot_metrics(metrics)
+            # plot_metrics(metrics)
 
 
      ############### Step 5 Training a Random Forest Classifier ##########
     # Start you Code here #
+    if classifier == "Random Forest":
+        st.sidebar.subheader("Model Hyperparameters")
+        n_estimators = st.sidebar.number_input("จำนวนของ decision trees (ยิ่งเยอะยิ่งแม่นยำ)",
+                                         100, 150, step=5,
+                                         key="n_estimators"
+                                        )
+        max_depth = st.sidebar.number_input("การตั้งค่าความลึกจำกัดจะช่วยลด overfitting",
+                                        5, 30, step=5,
+                                        key="max_depth"   
+                                     )
+        min_samples_split = st.sidebar.number_input("จำนวนตัวอย่างขั้นต่ำที่ต้องมีในแต่ละ node",
+                                                2, 20, step=1,
+                                                key="min_samples_split"
+                                             )
+        min_samples_leaf = st.sidebar.number_input("min_samples_leaf สูงจะช่วยลด overfitting",
+                                                1, 2, step=1,
+                                                key="min_samples_leaf"
+                                            )
+        
+        metrics = st.sidebar.multiselect("What metrics to plot?", ("Confusion Matrix", "ROC Curve", "Precision-Recall Curve"))
 
-
-
-
-
-
+        if st.sidebar.button("Classify", key="classify"):
+            st.subheader("Random Forest results")
+            model = RandomForestClassifier(
+                                            random_state=None, 
+                                            n_estimators=n_estimators,
+                                            max_depth=max_depth,
+                                            min_samples_split=min_samples_split,
+                                            min_samples_leaf=min_samples_leaf,
+                                        )
+            model.fit(x_train, y_train)
+            accuracy = model.score(x_test, y_test)
+            y_predict = model.predict(x_test)
+            
+            precision = precision_score(y_test, y_predict).round(2)
+            recall = recall_score(y_test, y_predict).round(2)
+            
+            st.write("Accuracy: ", round(accuracy, 2))
+            st.write("Precision: ", precision)
+            st.write("Recall: ", recall)
+            plot_metrics(metrics)
 
 
     if st.sidebar.checkbox("Show raw data", False):
         st.subheader("Mushroom dataset")
         st.write(df)
-
-    
-    
-    
-
-
 
 
 if __name__ == '__main__':
